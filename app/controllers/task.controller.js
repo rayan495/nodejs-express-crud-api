@@ -1,5 +1,6 @@
 const db = require("../models");
 const Task = db.task;
+const Op = db.Sequelize.Op;
 
 async function createTasks(req, res) {
   try {
@@ -112,11 +113,18 @@ async function getTasks(req, res) {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
     const status = req.query.status;
+    const search = req.query.search;
 
     const offset = (page - 1) * limit;
 
     const whereCondition = { userId: req.userId };
     if (status) whereCondition.status = status;
+    if (search) {
+      whereCondition[Op.or] = [
+        { [Op.iLike]: `%${search}%` }, 
+        { description: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
 
     const { count, rows: tasks } = await Task.findAndCountAll({
       where: whereCondition,
